@@ -1,15 +1,5 @@
 <template lang="pug">
-.about
-    h1 This is an about page
-    p
-        small Say hello to&nbsp;
-        input(v-model="world" type="text")
-        template(v-if="locales.length > 1")
-            small &nbsp;in&nbsp;
-            select(v-model="locale")
-                option(v-for="value in locales" :key="value" :value="value")
-                    | {{ value }}
-    p {{ $t('hello', {world}) }}
+h1 About
 </template>
 
 <script>

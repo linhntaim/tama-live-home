@@ -1,52 +1,68 @@
 <template lang="pug">
-.home
-    img(alt="Vue logo" src="../../assets/logo.png")
-    hello-world(msg="Welcome to Your Vue.js App")
+h1 tama LIVE
+button(@click.prevent="startSyncingPrice") Start
+button(@click.prevent="stopSyncingPrice") Stop
+br
+button(@click.prevent="subscribe") Subscribe
+button(@click.prevent="unsubscribe") Unsubscribe
 </template>
 
 <script>
-// @ is an alias to /src
-import HelloWorld from '@/resources/views/components/HelloWorld.vue'
+import {take} from '@/app/support/helpers'
+import io from 'socket.io-client'
 import {app} from '@/bootstrap/app'
 
 export default {
     // eslint-disable-next-line
     name: 'Home',
-    components: {
-        HelloWorld,
+    setup() {
+        return {
+            socket: take(
+                io(app.$config.env.VUE_APP_SOCKET_URL, {
+                    transports: ['websocket', 'polling'],
+                }),
+                socket => {
+                    socket.on('connected', data => {
+                        console.log(data)
+                    })
+                    socket.on('stream.connected', data => {
+                        console.log(data)
+                    })
+                },
+            ),
+        }
     },
-    beforeRouteEnter() { // cannot access `this`
-        app.$log.debug('page', 'home.beforeRouteEnter')
-    },
-    beforeRouteUpdate() {
-        this.$log.debug('page', 'home.beforeRouteUpdate')
-    },
-    beforeRouteLeave() {
-        this.$log.debug('page', 'home.beforeRouteLeave')
-    },
-    beforeCreate() {
-        this.$log.debug('page', 'home.beforeCreate')
-    },
-    created() {
-        this.$log.debug('page', 'home.created')
-    },
-    beforeUpdate() {
-        this.$log.debug('page', 'home.beforeUpdate')
-    },
-    updated() {
-        this.$log.debug('page', 'home.updated')
-    },
-    beforeMount() {
-        this.$log.debug('page', 'home.beforeMount//rendering')
+    data() {
+        return {
+            interval: {
+                id: null,
+            },
+        }
     },
     mounted() {
-        this.$log.debug('page', 'home.mounted//rendered')
+        this.socket.on('ws.subscribed', data => {
+            console.log(data)
+        })
+        this.socket.on('symbol.price.fetched', data => {
+            console.log(data)
+        })
     },
-    beforeUnmount() {
-        this.$log.debug('page', 'home.beforeUnmount')
-    },
-    unmounted() {
-        this.$log.debug('page', 'home.unmounted')
+    methods: {
+        subscribe() {
+            this.socket.emit('subscribe', 'btcusdt@trade')
+        },
+        unsubscribe() {
+            this.socket.emit('unsubscribe', 'btcusdt@trade')
+        },
+        startSyncingPrice() {
+            this.interval.id = setInterval(() => this.socket.emit('symbol.price.fetch', 'BTC'), 1000)
+        },
+        stopSyncingPrice() {
+            if (this.interval.id) {
+                clearInterval(this.interval.id)
+                this.interval.id = null
+            }
+        },
     },
 }
 </script>
